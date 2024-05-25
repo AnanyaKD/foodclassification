@@ -22,7 +22,7 @@ st.markdown("""
 
 @st.cache_resource
 def load_model():
-    mod=YOLO("/Users/anushkadurg/Documents/runs/classify/train/weights/best.pt ")
+    mod=YOLO("best.pt ")
     return mod
     #return YOLO(model_path)
 
