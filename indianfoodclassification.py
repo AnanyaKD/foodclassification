@@ -3,7 +3,7 @@ from PIL import Image
 from ultralytics import YOLO
 
 # Load YOLOv8 model (assumes the model is pretrained for Indian food classification)
-model_path = "/Users/anushkadurg/Downloads/archive"
+model_path = "/Users/anushkadurg/Documents/FINAL!"
 
 # Streamlit app
 st.set_page_config(page_title="Food Classification App", page_icon="🍲", layout="centered")
