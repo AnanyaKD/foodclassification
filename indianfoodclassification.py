@@ -1,10 +1,7 @@
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
-from ultralytics.utils import plt
-
-# Load YOLOv8 model (assumes the model is pretrained for Indian food classification)
-model_path = "/Users/anushkadurg/Documents/FINAL!/best.pt"
+import matplotlib.pyplot as plt
 
 # Streamlit app configuration
 st.set_page_config(page_title="Food Classification App", page_icon="🍲", layout="centered")
@@ -23,10 +20,10 @@ st.markdown("""
 # Cache the model loading function to avoid reloading on every run
 @st.cache_resource
 def load_model():
-    model = YOLO(model_path)
+    model = YOLO("best.pt")
     return model
 
-# Placeholder for storing reviews
+# Initialize session state for storing reviews
 if 'reviews' not in st.session_state:
     st.session_state.reviews = []
 
@@ -48,7 +45,7 @@ with tab1:
             # Perform detection directly with PIL image
             results = model.predict(image)
             top5_indices = results[0].probs.top5
-            top5_confidences = results[0].probs.top5conf.numpy()
+            top5_confidences = results[0].probs.top5conf.cpu().numpy()  # Ensure it's converted to numpy array
 
         st.header("Top 5 Predictions:")
         predictions = []
@@ -67,7 +64,6 @@ with tab1:
         ax.set_title('Top 5 Predictions')
         st.pyplot(fig)
 
-            
 # Tab 2: About
 with tab2:
     st.header("About this App")
