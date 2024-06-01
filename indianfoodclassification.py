@@ -1,36 +1,38 @@
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
+from ultralytics.utils import plt
 
 # Load YOLOv8 model (assumes the model is pretrained for Indian food classification)
-model_path = "/Users/anushkadurg/Documents/FINAL!"
+model_path = "/Users/anushkadurg/Documents/FINAL!/best.pt"
 
-# Streamlit app
+# Streamlit app configuration
 st.set_page_config(page_title="Food Classification App", page_icon="🍲", layout="centered")
 st.title("🍽️ Food Classification App")
 
+# Custom background for the app
 st.markdown("""
-                <style>
+    <style>
     .stApp {
-    background-image: url("https://as2.ftcdn.net/v2/jpg/05/64/97/31/1000_F_564973106_xO0n1BvNmsFy2Sj2SK2Uy2pzH3hDqeDy.jpg");
-    background-size: cover;
+        background-image: url("https://tint.creativemarket.com/_tdX-cL_1LzfGtnO_ks3o0PJwJvEKgKQcTFa78xF06U/width:3640/height:2410/gravity:nowe/rt:fill-down/el:1/preset:cm_watermark_retina/czM6Ly9maWxlcy5jcmVhdGl2ZW1hcmtldC5jb20vaW1hZ2VzL3NjcmVlbnNob3RzL3Byb2R1Y3RzLzEyMzMvMTIzMzcvMTIzMzc4NDYvMy0wOTcxNi1vLmpwZw");
+        background-size: cover;
     }
     </style>
-                """, unsafe_allow_html = True)
+""", unsafe_allow_html=True)
 
-
-
+# Cache the model loading function to avoid reloading on every run
 @st.cache_resource
 def load_model():
-    mod=YOLO("best.pt ")
-    return mod
-    #return YOLO(model_path)
+    model = YOLO(model_path)
+    return model
 
+# Placeholder for storing reviews
+if 'reviews' not in st.session_state:
+    st.session_state.reviews = []
 
-# Create two tabs
-tab1, tab2 = st.tabs(["Image Classification", "About"])
+# Create three tabs for different sections
+tab1, tab2, tab3 = st.tabs(["Image Classification", "About", "User Reviews"])
 
-# Tab 1: Image Classification
 with tab1:
     st.header("Upload an Image for Classification")
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
@@ -40,18 +42,33 @@ with tab1:
         st.image(image, caption='Uploaded Image.', use_column_width=True)
 
         st.write("")
-        st.write("Classifying...")
-        mod1 = load_model()
+        model = load_model()
 
-        # Perform detection directly with PIL image
-        results = mod1.predict(image)
-        top5_preds = results[0].probs.top5
+        with st.spinner("Classifying... Please wait..."):
+            # Perform detection directly with PIL image
+            results = model.predict(image)
+            top5_indices = results[0].probs.top5
+            top5_confidences = results[0].probs.top5conf.numpy()
 
         st.header("Top 5 Predictions:")
-        for ind in top5_preds:
-            st.header(f"🔸 {results[0].names[ind]}")
-        
-##Tab 2: About
+        predictions = []
+        probabilities = []
+        for idx, ind in enumerate(top5_indices):
+            dish_name = results[0].names[ind]
+            prob = top5_confidences[idx]
+            predictions.append(dish_name)
+            probabilities.append(prob)
+            st.subheader(f"🔸 {dish_name} ({prob:.2%})")
+
+        # Display the probabilities as a bar chart
+        fig, ax = plt.subplots()
+        ax.barh(predictions, probabilities, color='skyblue')
+        ax.set_xlabel('Probability')
+        ax.set_title('Top 5 Predictions')
+        st.pyplot(fig)
+
+            
+# Tab 2: About
 with tab2:
     st.header("About this App")
 
@@ -84,3 +101,28 @@ with tab2:
         </ol>
     </div>
     """, unsafe_allow_html=True)
+
+# Tab 3: User Reviews
+with tab3:
+    st.header("User Reviews")
+
+    # Add a form to submit reviews
+    with st.form(key='user_review_form'):
+        review_text = st.text_input("Leave a review:")
+        review_rating = st.slider("Rate the dish:", 1, 5)
+        submit_button = st.form_submit_button(label='Submit')
+
+        if submit_button:
+            review = {
+                "text": review_text,
+                "rating": review_rating
+            }
+            st.session_state.reviews.append(review)
+            st.success("Review submitted!")
+
+    # Display all reviews
+    if st.session_state.reviews:
+        st.header("User Reviews")
+        for review in st.session_state.reviews:
+            st.write(f"Rating: {review['rating']} ⭐")
+            st.write(review['text'])
